@@ -37,15 +37,15 @@ let f = (node) => {
     f(node.expression)
     output(";\n" + indent)
   } else if (node.type == "BinaryExpression") {
-    if (node.extra && node.extra.parenthesized) {
+    //if (node.extra && node.extra.parenthesized) {
       output("( ")
-    }
+    //}
     f(node.left)
     output(" " + node.operator + " ")
     f(node.right)
-    if (node.extra && node.extra.parenthesized) {
+    //if (node.extra && node.extra.parenthesized) {
       output(" )")
-    }
+    //}
   } else if (node.type == "NumericLiteral") {
     output(node.value)
   } else if (node.type == "CommentLine") {
@@ -221,7 +221,9 @@ let f = (node) => {
     }
     output(" }")
   } else if (node.type == "ObjectProperty") {
-    output(node.key.extra.raw + ": " + node.value.extra.raw)
+    f(node.key)
+    output(": ")
+    f(node.value)
   } else if (node.type == "ThisExpression") {
     output("this")
   } else {
