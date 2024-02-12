@@ -3,7 +3,8 @@ var fs      = require("fs");
 
 var program = {
   text: [],
-  data: []
+  data: [],
+  vars: []
 }
 
 let output = (cmd) => {
@@ -57,6 +58,7 @@ let run = (node) => {
 	  for (let i = 0; i < node.declarations.length; i++) {
       let decl = node.declarations[i]
       program.data.push("var__"+decl.id.name+":")
+      program.vars.push(decl.id.name)
       if (!decl.init) {
         program.data.push("    .long 0")
       } else if (decl.init.type == "NumericLiteral") {
@@ -65,6 +67,20 @@ let run = (node) => {
         program.data.push("    .long 0")
       } else if (decl.init.type == "StringLiteral") {
 			  program.data.push("    .string "+ "\"" + decl.init.value + "\"")
+      } else if (decl.init.type == "ObjectExpression") {
+        for (let j = 0; j < decl.init.properties.length; j++) {
+          let attr = decl.init.properties[j]
+          program.data.push("      .long var__" + decl.id.name + "_" + attr.key.value + ":")
+          if (attr.value.type == "NumericLiteral") {
+            program.data.push("      .long " + attr.value.value)
+          } else if (attr.value.type == "NullLiteral") {
+            program.data.push("      .long 0")
+          } else if (attr.value.type == "StringLiteral") {
+			      program.data.push("      .string "+ "\"" + attr.value.value + "\"")
+          } else {
+            console.log("unhandled ObjectExpression", decl)
+          }
+        }
       } else {
         console.log("unhandled VariableDeclaration", decl)
       }
