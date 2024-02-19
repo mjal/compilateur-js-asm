@@ -4,6 +4,7 @@ var fs      = require("fs");
 var program = {
   text: [],
   data: [],
+  func: [],
   vars: []
 }
 
@@ -32,32 +33,31 @@ let run = (node) => {
       run(node.body[i])
     }
   } else if (node.type == "NumericLiteral") {
-    output("pushq $" + node.value)
+    program.text.push("pushq $" + node.value)
   } else if (node.type == "ExpressionStatement") {
     run(node.expression)
-    output("popq %rax");
-    output("movq %rax, %rdi");
+    program.text.push("popq %rax");
+    program.text.push("movq %rax, %rdi");
   } else if (node.type == "BinaryExpression") {
     // Push operands
     run(node.left)
     run(node.right)
-    output("popq %rbx");
-    output("popq %rax");
+    program.text.push("popq %rbx");
+    program.text.push("popq %rax");
     if (node.operator == "+") {
-      output("addq %rbx, %rax");
+      program.text.push("addq %rbx, %rax");
     } else if (node.operator == "-") {
-      output("subq %rbx, %rax");
+      program.text.push("subq %rbx, %rax");
     } else if (node.operator == "*") {
-      output("imulq %rbx, %rax");
+      program.text.push("imulq %rbx, %rax");
     } else {
       console.log("unhandled BinaryExpression", node)
-      output("addq %rbx, %rax");
     }
-    output("pushq %rax");
+    program.text.push("pushq %rax");
   } else if (node.type == "VariableDeclaration") {
 	  for (let i = 0; i < node.declarations.length; i++) {
       let decl = node.declarations[i]
-      program.data.push("var__"+decl.id.name+":")
+      program.data.push("__var__"+decl.id.name+":")
       program.vars.push(decl.id.name)
       if (!decl.init) {
         program.data.push("    .long 0")
@@ -68,9 +68,10 @@ let run = (node) => {
       } else if (decl.init.type == "StringLiteral") {
 			  program.data.push("    .string "+ "\"" + decl.init.value + "\"")
       } else if (decl.init.type == "ObjectExpression") {
+        program.text.push("call obj_new")
         for (let j = 0; j < decl.init.properties.length; j++) {
           let attr = decl.init.properties[j]
-          program.data.push("      .long var__" + decl.id.name + "_" + attr.key.value + ":")
+          program.data.push("      __var__" + decl.id.name + "_" + attr.key.value + ":")
           if (attr.value.type == "NumericLiteral") {
             program.data.push("      .long " + attr.value.value)
           } else if (attr.value.type == "NullLiteral") {
@@ -84,6 +85,17 @@ let run = (node) => {
       } else {
         console.log("unhandled VariableDeclaration", decl)
       }
+    }
+  } else if (node.type == "Identifier") {
+    console.log("unhandled ", node)
+	  program.text.push("    movl __var__"+node.name+", %eax")
+		program.text.push("    pushq %rax")
+  } else if (node.type == "Identifier") {
+    console.log("unhandled ", node)
+  } else if (node.type == "AssignmentExpression") {
+    if (node.left.type == "MemberExpression") {
+      program.text.push("movl $"+node.right.value+", %edi")
+      program.text.push("call obj_set")
     }
   } else {
     console.log("unhandled ", node)
