@@ -28,10 +28,13 @@ int obj_set(struct obj_s *obj, char *name, int value) {
   while (field != NULL) {
     if (strcmp(field->name, name) == 0) {
       field->value = value;
+      return 0;
     }
     field = field->next;
   }
   struct field_s *newField = malloc(sizeof(struct field_s));
+  newField->name = name;
+  newField->value = value;
   newField->next = obj->head;
   obj->head = newField;
   return 0;
