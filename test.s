@@ -6,7 +6,7 @@ __var__obj:
 
 main:
     call obj_new
-    movl $1, %edi
+    mov %rax, %rbx
     call obj_set
-    popq %rax
-    movq %rax, %rdi
+;    popq %rax
+;    movq %rax, %rdi

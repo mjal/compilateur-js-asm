@@ -1,2 +1,2 @@
-var obj = {}
-obj.a = 1
+var obj = {b: 2}
+//obj.a = 1

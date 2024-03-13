@@ -8,10 +8,6 @@ var program = {
   vars: []
 }
 
-let output = (cmd) => {
-  program.text.push(cmd)
-}
-
 var filename = process.argv[2];
 if (!filename) {
   console.error("no filename specified");
@@ -68,19 +64,35 @@ let run = (node) => {
       } else if (decl.init.type == "StringLiteral") {
 			  program.data.push("    .string "+ "\"" + decl.init.value + "\"")
       } else if (decl.init.type == "ObjectExpression") {
+
         program.text.push("call obj_new")
+        program.text.push("movq %rax, %rbx")
+
         for (let j = 0; j < decl.init.properties.length; j++) {
           let attr = decl.init.properties[j]
-          program.data.push("      __var__" + decl.id.name + "_" + attr.key.value + ":")
-          if (attr.value.type == "NumericLiteral") {
-            program.data.push("      .long " + attr.value.value)
-          } else if (attr.value.type == "NullLiteral") {
-            program.data.push("      .long 0")
-          } else if (attr.value.type == "StringLiteral") {
-			      program.data.push("      .string "+ "\"" + attr.value.value + "\"")
-          } else {
-            console.log("unhandled ObjectExpression", decl)
-          }
+
+          //console.log(attr)
+          attr_name = "__attr__" + decl.id.name + "_" + attr.key.name
+          program.data.push(attr_name + ":")
+          program.data.push("    .string \""+attr.key.name+"\"")
+
+          program.text.push("movq %rbx, %rdi") // TODO use movq
+          program.text.push("lea "+attr_name+", %rsi") // TODO use movq
+          program.text.push("movq $"+attr.value.value+", %rdx")
+          program.text.push("call obj_set")
+
+          //program.data.push("    .string" + decl.id.name + "_" + attr.key.value + ":")
+          //console.log(attr)
+
+          //if (attr.value.type == "NumericLiteral") {
+          //  program.data.push("      .long " + attr.value.value)
+          //} else if (attr.value.type == "NullLiteral") {
+          //  program.data.push("      .long 0")
+          //} else if (attr.value.type == "StringLiteral") {
+			    //  program.data.push("      .string "+ "\"" + attr.value.value + "\"")
+          //} else {
+          //  console.log("unhandled ObjectExpression", decl)
+          //}
         }
       } else {
         console.log("unhandled VariableDeclaration", decl)
